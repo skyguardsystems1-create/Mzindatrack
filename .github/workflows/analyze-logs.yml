@@ -141,7 +141,7 @@ jobs:
             });
             
             const existingComment = comments.find(c => 
-              c.body.includes('Build Log Analysis - Run #${{ github.event.workflow_run.run_number }}')
+              c.body.includes('Build Log Analysis')
             );
             
             if (existingComment) {
