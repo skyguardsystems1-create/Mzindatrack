@@ -77,7 +77,7 @@ jobs:
         pip install --upgrade pip setuptools wheel
         
         echo "🔨 Installing build tools with pinned versions..."
-        pip install "buildozer>=1.5.0" "Cython==0.29.36" "python-for-android>=2024.1" "setuptools<75"
+        pip install "buildozer==1.5.0" "Cython==0.29.36" "python-for-android==2024.10.25" "setuptools<75"
         
         echo "✅ Build tools installed"
         echo "📍 Buildozer path:"
