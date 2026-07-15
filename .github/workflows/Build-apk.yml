@@ -78,7 +78,7 @@ jobs:
         
         echo "🔨 Installing build tools with pinned versions..."
         # Install p4a from develop branch and pin Cython to compatible version
-        pip install "buildozer==1.5.0" "Cython==3.0.10" "setuptools<75" git+https://github.com/kivy/python-for-android@develop
+        pip install "buildozer==1.5.0" "Cython==3.0.11" "setuptools<75" git+https://github.com/kivy/python-for-android@develop
         
         echo "✅ Build tools installed"
         echo "📍 Buildozer path:"
@@ -139,8 +139,8 @@ jobs:
           # FIX: Completely replace the requirements line
           # Remove any existing requirements line entirely
           sed -i '/^requirements/d' buildozer.spec || true
-          # Add the correct requirements at the beginning of the [app] section (include Cython)
-          sed -i '/^\[app\]/a requirements = python3,Cython==3.0.10,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview' buildozer.spec || true
+          # Add the correct requirements at the beginning of the [app] section (include Cython 3.0.11 for Python 3.14 compatibility)
+          sed -i '/^\[app\]/a requirements = python3,Cython==3.0.11,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview' buildozer.spec || true
 
           # Fix android.arch to android.archs
           sed -i 's/android.arch =/android.archs =/g' buildozer.spec || true
@@ -240,76 +240,6 @@ jobs:
         retention-days: 7
         if-no-files-found: warn
 
-    - name: Performance metrics
-      if: always()
-      run: |
-        set -euo pipefail
-        echo "📊 Build Performance Metrics:"
-        echo ""
-        echo "Build Time: ${{ steps.build.outputs.build_time }}"
-        if [ "${{ steps.build.outputs.apk_exists }}" = "true" ]; then
-          echo "APK Size: ${{ steps.build.outputs.apk_size }}"
-        fi
-        echo ""
-        echo "💾 Disk Space After Build:"
-        df -h / | awk '{print "  " $0}'
-
-    - name: Generate build summary
-      if: always()
-      run: |
-        set -euo pipefail
-        {
-          echo "# 🔨 Build Summary"
-          echo ""
-          echo "## Status"
-          echo "- **Workflow Status**: ${{ job.status }}"
-          echo "- **Build Outcome**: ${{ steps.build.outcome }}"
-          echo "- **APK Generated**: ${{ steps.build.outputs.apk_exists == 'true' && '✅ Yes' || '❌ No' }}"
-          echo ""
-          echo "## Build Information"
-          echo "- **Run Number**: ${{ github.run_number }}"
-          echo "- **Branch**: ${{ github.ref_name }}"
-          echo "- **Commit**: `${{ github.sha }}`"
-          echo "- **Build Time**: ${{ steps.build.outputs.build_time }}"
-          echo "- **Runner**: ${{ runner.os }} (${{ runner.arch }})"
-          echo ""
-          if [ "${{ steps.build.outputs.apk_exists }}" = "true" ]; then
-            echo "## 🎉 APK Artifact"
-            echo "- **Name**: mzindatrack-apk"
-            echo "- **Size**: ${{ steps.build.outputs.apk_size }}"
-            echo "- **Available**: ✅ Available in workflow artifacts"
-            echo "- **Retention**: 30 days"
-          else
-            echo "## ❌ Build Failed"
-            echo "Check the **build-logs-${{ github.run_number }}** artifact for details."
-            echo ""
-            echo "### Troubleshooting Tips:"
-            echo "1. Check buildozer logs in artifacts"
-            echo "2. Verify buildozer.spec is properly configured"
-            echo "3. Ensure all dependencies are available"
-            echo "4. Check for disk space issues"
-          fi
-        } >> $GITHUB_STEP_SUMMARY
-
-    - name: Cleanup on failure
-      if: failure()
-      run: |
-        echo "⚠️ Build failed. Diagnostic information:"
-        echo ""
-        echo "📁 Current directory structure:"
-        find . -maxdepth 2 -type d | head -20
-        echo ""
-        echo "🔍 buildozer configuration:"
-        [ -f buildozer.spec ] && head -50 buildozer.spec || echo "buildozer.spec not found"
-        echo ""
-        echo "💾 Disk space status:"
-        df -h /
-        echo ""
-        echo "🔧 Build environment:"
-        echo "Java version: $(java -version 2>&1 | head -1)"
-        echo "Android SDK: $(ls -d /usr/lib/android-sdk 2>/dev/null || echo 'Not found')"
-        echo "Python version: $(python --version)"
-        echo "Buildozer version: $(buildozer --version 2>&1 || echo 'Not found')"
     - name: Performance metrics
       if: always()
       run: |
