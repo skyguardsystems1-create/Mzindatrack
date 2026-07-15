@@ -1,0 +1,180 @@
+name: Analyze Build Logs & Post Summary
+
+on:
+  workflow_run:
+    workflows: ["Build MzindaTrack APK"]
+    types: [completed]
+
+permissions:
+  contents: read
+  commits: write
+  actions: read
+
+jobs:
+  analyze-and-comment:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build logs artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: Build-apk.yml
+          run_id: ${{ github.event.workflow_run.id }}
+          name: build-logs-${{ github.event.workflow_run.run_number }}
+          path: ./logs
+        continue-on-error: true
+
+      - name: Check if logs exist
+        id: check_logs
+        run: |
+          if [ -f "./logs/build.log" ]; then
+            echo "logs_found=true" >> $GITHUB_OUTPUT
+            echo "✅ Build logs found"
+          else
+            echo "logs_found=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Build logs not found"
+            ls -la ./logs/ || echo "logs directory empty"
+          fi
+
+      - name: Analyze build logs
+        if: steps.check_logs.outputs.logs_found == 'true'
+        id: analyze
+        run: |
+          LOG_FILE="./logs/build.log"
+          OUTPUT_FILE="build-summary.md"
+          
+          {
+            echo "## 🔍 Build Log Analysis - Run #${{ github.event.workflow_run.run_number }}"
+            echo ""
+            echo "**Commit:** [\`${{ github.event.workflow_run.head_commit.id }}\`](https://github.com/${{ github.repository }}/commit/${{ github.event.workflow_run.head_commit.id }})"
+            echo ""
+            echo "**Status:** ${{ github.event.workflow_run.conclusion }}"
+            echo ""
+            
+            ORIGINAL_KB=$(du -k "$LOG_FILE" | cut -f1)
+            echo "📄 **Original Log Size:** $ORIGINAL_KB KB"
+            echo ""
+            
+            ERROR_COUNT=$(grep -ic "error\|failed" "$LOG_FILE" 2>/dev/null || echo "0")
+            if [ "$ERROR_COUNT" -gt 0 ]; then
+              echo "### 🚨 Critical Errors Found: $ERROR_COUNT"
+              echo "\`\`\`"
+              grep -i "error\|failed\|exception\|fatal" "$LOG_FILE" 2>/dev/null | grep -v "^\s*$" | sort -u | head -15
+              echo "\`\`\`"
+              echo ""
+            fi
+            
+            if grep -q "build failed\|build error\|compilation failed" "$LOG_FILE"; then
+              echo "### ❌ Build Failures"
+              echo "\`\`\`"
+              grep -i "build failed\|build error\|compilation failed" "$LOG_FILE" | head -10
+              echo "\`\`\`"
+              echo ""
+            fi
+            
+            if grep -q "undefined reference\|ld.so\|linker error\|cannot find" "$LOG_FILE"; then
+              echo "### 🔗 Linking Issues"
+              echo "\`\`\`"
+              grep -i "undefined reference\|ld.so\|linker error\|cannot find" "$LOG_FILE" | head -10
+              echo "\`\`\`"
+              echo ""
+            fi
+            
+            if grep -q "gradle\|java\|javac" "$LOG_FILE"; then
+              echo "### ☕ Java/Gradle Issues"
+              echo "\`\`\`"
+              grep -i "gradle\|java.*error\|javac" "$LOG_FILE" | head -10
+              echo "\`\`\`"
+              echo ""
+            fi
+            
+            if grep -q "cython\|python\|setuptools" "$LOG_FILE"; then
+              echo "### 🐍 Python/Cython Issues"
+              echo "\`\`\`"
+              grep -i "cython\|python.*error\|setuptools" "$LOG_FILE" | head -10
+              echo "\`\`\`"
+              echo ""
+            fi
+            
+            if grep -q "ndk\|sdk\|android" "$LOG_FILE"; then
+              echo "### 🎯 NDK/SDK Issues"
+              echo "\`\`\`"
+              grep -i "ndk\|sdk\|android.*error\|clang" "$LOG_FILE" | head -10
+              echo "\`\`\`"
+              echo ""
+            fi
+            
+            echo "### 🎯 Root Cause (Last Error)"
+            echo "\`\`\`"
+            grep -i "error\|failed\|exception" "$LOG_FILE" 2>/dev/null | tail -1
+            echo "\`\`\`"
+            echo ""
+            
+            echo "### 📌 Final Build Output (Last 30 Lines)"
+            echo "\`\`\`"
+            tail -30 "$LOG_FILE"
+            echo "\`\`\`"
+            
+          } > "$OUTPUT_FILE"
+          
+          echo "summary_created=true" >> $GITHUB_OUTPUT
+
+      - name: Post summary to commit
+        if: steps.analyze.outputs.summary_created == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('build-summary.md', 'utf8');
+            
+            const commitSha = '${{ github.event.workflow_run.head_commit.id }}';
+            
+            const { data: comments } = await github.rest.repos.listCommentsForCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: commitSha,
+            });
+            
+            const existingComment = comments.find(c => 
+              c.body.includes('Build Log Analysis - Run #${{ github.event.workflow_run.run_number }}')
+            );
+            
+            if (existingComment) {
+              await github.rest.repos.updateCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: summary
+              });
+              console.log('✅ Updated existing commit comment');
+            } else {
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: commitSha,
+                body: summary
+              });
+              console.log('✅ Posted new commit comment');
+            }
+
+      - name: Create job summary
+        if: always()
+        run: |
+          {
+            echo "## ✅ Build Analysis Complete"
+            echo ""
+            echo "📊 Analysis Status:"
+            if [ -f "build-summary.md" ]; then
+              echo "- ✅ Summary created"
+              echo "- ✅ Posted to commit [\`${{ github.event.workflow_run.head_commit.id }}\`](https://github.com/${{ github.repository }}/commit/${{ github.event.workflow_run.head_commit.id }})"
+            else
+              echo "- ⚠️ No build logs found to analyze"
+            fi
+            echo ""
+            echo "🔗 View the analysis in the [commit page](https://github.com/${{ github.repository }}/commit/${{ github.event.workflow_run.head_commit.id }})"
+          } >> $GITHUB_STEP_SUMMARY
