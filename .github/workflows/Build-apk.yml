@@ -133,19 +133,11 @@ jobs:
           sed -i 's/p4a.branch = release-2023.6.0/p4a.branch = master/g' buildozer.spec || true
           sed -i 's/p4a.branch = release-2023.7.0/p4a.branch = master/g' buildozer.spec || true
 
-          # FIX: Remove ALL Python version pinning - this is the critical fix
-          # Remove any version numbers after python3
-          sed -i 's/python3==[0-9.]*[,)]*/python3/g' buildozer.spec || true
-          sed -i 's/python3==[0-9.]*/python3/g' buildozer.spec || true
-          
-          # Ensure requirements line has the correct format
-          # If requirements line exists, replace it completely
-          if grep -q "^requirements" buildozer.spec; then
-            # Remove any existing requirements line
-            sed -i '/^requirements/d' buildozer.spec || true
-            # Add the correct requirements at the top of the [app] section
-            sed -i '/^\[app\]/a requirements = python3,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview' buildozer.spec || true
-          fi
+          # FIX: Completely replace the requirements line
+          # Remove any existing requirements line entirely
+          sed -i '/^requirements/d' buildozer.spec || true
+          # Add the correct requirements at the beginning of the [app] section
+          sed -i '/^\[app\]/a requirements = python3,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview' buildozer.spec || true
 
           # Fix android.arch to android.archs
           sed -i 's/android.arch =/android.archs =/g' buildozer.spec || true
@@ -165,8 +157,8 @@ jobs:
 
           echo "✅ buildozer.spec updated"
           echo ""
-          echo "📋 Requirements line:"
-          grep "^requirements" buildozer.spec || echo "No requirements line found"
+          echo "📋 Full requirements line:"
+          grep "^requirements" buildozer.spec || echo "ERROR: No requirements line found!"
           echo ""
           echo "📋 Gradle dependencies:"
           grep "^android.gradle_dependencies" buildozer.spec || echo "No gradle dependencies found"
