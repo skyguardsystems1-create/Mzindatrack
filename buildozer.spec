@@ -9,17 +9,17 @@ source.exclude_exts = spec,md,yml,yaml
 source.exclude_dirs = tests, bin, __pycache__, .git, .github, .buildozer
 version = 1.0.0
 
-# IMPORTANT: Do NOT include 'android' as a pip requirement. It's built by p4a.
-# Only include pure Python packages and libraries buildozer can cross-compile
-requirements = python3==3.10.13,kivy==2.2.1,requests,plyer,pyjnius
+# IMPORTANT: Don't pin python3 version - let it use the system version
+# The system python 3.14.2 will be used as hostpython3
+requirements = python3,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview
 
-presplash.filename = data/presplash.png
+presplash.filename = assets/presplash.png
 icon.filename = assets/icon.png
 orientation = portrait
 fullscreen = 0
 
 # Android permissions
-android.permissions = INTERNET,ACCESS_FINE_LOCATION,ACCESS_COARSE_LOCATION
+android.permissions = INTERNET,ACCESS_FINE_LOCATION,ACCESS_COARSE_LOCATION,ACCESS_NETWORK_STATE
 
 # API levels
 android.api = 30
@@ -35,6 +35,9 @@ android.apptheme = @style/Theme.AppCompat
 android.archs = arm64-v8a
 android.copy_libs = 1
 android.use_androidx = True
+
+# WebView support
+android.gradle_dependencies = 'androidx.webkit:webkit:1.6.1'
 
 # Python-for-Android settings
 p4a.branch = master
