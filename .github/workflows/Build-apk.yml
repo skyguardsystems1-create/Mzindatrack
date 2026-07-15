@@ -133,10 +133,17 @@ jobs:
           sed -i 's/p4a.branch = release-2023.6.0/p4a.branch = master/g' buildozer.spec || true
           sed -i 's/p4a.branch = release-2023.7.0/p4a.branch = master/g' buildozer.spec || true
 
-          # Use Python 3.9 with Kivy 2.2.1 (proven stable combination for Android)
-          sed -i 's/requirements = python3==3.9.*/requirements = python3==3.9,kivy==2.2.1,requests,plyer,pyjnius/g' buildozer.spec || true
-          sed -i 's/requirements = python3==3.10.*/requirements = python3==3.9,kivy==2.2.1,requests,plyer,pyjnius/g' buildozer.spec || true
-          sed -i 's/requirements = hostpython3.*/requirements = python3==3.9,kivy==2.2.1,requests,plyer,pyjnius/g' buildozer.spec || true
+          # FIX: Remove python3 version pinning - use system python
+          # Remove any version pinning from python3 requirement
+          sed -i 's/requirements = python3==3\.[0-9]\.[0-9]*/requirements = python3/g' buildozer.spec || true
+          sed -i 's/requirements = python3==3\.[0-9]*/requirements = python3/g' buildozer.spec || true
+          sed -i 's/requirements = python3==[0-9]\.[0-9]*\.[0-9]*/requirements = python3/g' buildozer.spec || true
+          sed -i 's/requirements = hostpython3.*/requirements = python3,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview/g' buildozer.spec || true
+
+          # Add kivy-garden.xwebview if not present
+          if ! grep -q "kivy-garden.xwebview" buildozer.spec; then
+            sed -i 's/requirements = \(.*\)/requirements = \1,kivy-garden.xwebview/g' buildozer.spec || true
+          fi
 
           # Remove problematic dependencies
           sed -i 's/kivy-garden.xwebview//g' buildozer.spec || true
@@ -153,10 +160,18 @@ jobs:
           sed -i 's/android.api = 33/android.api = 30/g' buildozer.spec || true
           sed -i 's/android.minapi = 21/android.minapi = 21/g' buildozer.spec || true
 
+          # Add WebView gradle dependency
+          if ! grep -q "android.gradle_dependencies" buildozer.spec; then
+            echo "android.gradle_dependencies = 'androidx.webkit:webkit:1.6.1'" >> buildozer.spec
+          fi
+
           echo "✅ buildozer.spec updated"
           echo ""
           echo "📋 Requirements line:"
           grep "^requirements" buildozer.spec || echo "No requirements line found"
+          echo ""
+          echo "📋 Gradle dependencies:"
+          grep "^android.gradle_dependencies" buildozer.spec || echo "No gradle dependencies found"
         else
           echo "⚠️ buildozer.spec not found; skipping configuration"
         fi
