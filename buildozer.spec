@@ -9,7 +9,7 @@ source.exclude_exts = spec,md,yml,yaml
 source.exclude_dirs = tests, bin, __pycache__, .git, .github, .buildozer
 version = 1.0.0
 
-# IMPORTANT: Don't pin python3 version - let it use the system version
+# IMPORTANT: Do NOT pin python3 version - let it use the system version
 # The system python 3.14.2 will be used as hostpython3
 requirements = python3,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview
 
