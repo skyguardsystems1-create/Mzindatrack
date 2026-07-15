@@ -133,24 +133,19 @@ jobs:
           sed -i 's/p4a.branch = release-2023.6.0/p4a.branch = master/g' buildozer.spec || true
           sed -i 's/p4a.branch = release-2023.7.0/p4a.branch = master/g' buildozer.spec || true
 
-          # FIX: Remove ALL Python version pinning - use system Python 3.14
-          # This is the critical fix - remove version numbers from python3
-          sed -i 's/requirements = python3==3\.[0-9.]*/requirements = python3/g' buildozer.spec || true
-          sed -i 's/requirements = python3==[0-9.]*/requirements = python3/g' buildozer.spec || true
-          sed -i 's/requirements = hostpython3.*/requirements = python3,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview/g' buildozer.spec || true
-          
-          # Ensure kivy-garden.xwebview is in requirements
-          if ! grep -q "kivy-garden.xwebview" buildozer.spec; then
-            sed -i 's/requirements = \(.*\)/requirements = \1,kivy-garden.xwebview/g' buildozer.spec || true
-          fi
-
-          # Remove any leftover version pins
-          sed -i 's/python3==3\.[0-9.]*/python3/g' buildozer.spec || true
+          # FIX: Remove ALL Python version pinning - this is the critical fix
+          # Remove any version numbers after python3
+          sed -i 's/python3==[0-9.]*[,)]*/python3/g' buildozer.spec || true
           sed -i 's/python3==[0-9.]*/python3/g' buildozer.spec || true
-
-          # Remove problematic dependencies
-          sed -i 's/kivy-garden.xwebview//g' buildozer.spec || true
-          sed -i 's/,,/,/g' buildozer.spec || true
+          
+          # Ensure requirements line has the correct format
+          # If requirements line exists, replace it completely
+          if grep -q "^requirements" buildozer.spec; then
+            # Remove any existing requirements line
+            sed -i '/^requirements/d' buildozer.spec || true
+            # Add the correct requirements at the top of the [app] section
+            sed -i '/^\[app\]/a requirements = python3,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview' buildozer.spec || true
+          fi
 
           # Fix android.arch to android.archs
           sed -i 's/android.arch =/android.archs =/g' buildozer.spec || true
@@ -163,7 +158,7 @@ jobs:
           sed -i 's/android.api = 33/android.api = 30/g' buildozer.spec || true
           sed -i 's/android.minapi = 21/android.minapi = 21/g' buildozer.spec || true
 
-          # Add WebView gradle dependency
+          # Add WebView gradle dependency if not present
           if ! grep -q "android.gradle_dependencies" buildozer.spec; then
             echo "android.gradle_dependencies = 'androidx.webkit:webkit:1.6.1'" >> buildozer.spec
           fi
