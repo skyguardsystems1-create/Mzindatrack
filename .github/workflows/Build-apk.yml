@@ -133,17 +133,20 @@ jobs:
           sed -i 's/p4a.branch = release-2023.6.0/p4a.branch = master/g' buildozer.spec || true
           sed -i 's/p4a.branch = release-2023.7.0/p4a.branch = master/g' buildozer.spec || true
 
-          # FIX: Remove python3 version pinning - use system python
-          # Remove any version pinning from python3 requirement
-          sed -i 's/requirements = python3==3\.[0-9]\.[0-9]*/requirements = python3/g' buildozer.spec || true
-          sed -i 's/requirements = python3==3\.[0-9]*/requirements = python3/g' buildozer.spec || true
-          sed -i 's/requirements = python3==[0-9]\.[0-9]*\.[0-9]*/requirements = python3/g' buildozer.spec || true
+          # FIX: Remove ALL Python version pinning - use system Python 3.14
+          # This is the critical fix - remove version numbers from python3
+          sed -i 's/requirements = python3==3\.[0-9.]*/requirements = python3/g' buildozer.spec || true
+          sed -i 's/requirements = python3==[0-9.]*/requirements = python3/g' buildozer.spec || true
           sed -i 's/requirements = hostpython3.*/requirements = python3,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview/g' buildozer.spec || true
-
-          # Add kivy-garden.xwebview if not present
+          
+          # Ensure kivy-garden.xwebview is in requirements
           if ! grep -q "kivy-garden.xwebview" buildozer.spec; then
             sed -i 's/requirements = \(.*\)/requirements = \1,kivy-garden.xwebview/g' buildozer.spec || true
           fi
+
+          # Remove any leftover version pins
+          sed -i 's/python3==3\.[0-9.]*/python3/g' buildozer.spec || true
+          sed -i 's/python3==[0-9.]*/python3/g' buildozer.spec || true
 
           # Remove problematic dependencies
           sed -i 's/kivy-garden.xwebview//g' buildozer.spec || true
