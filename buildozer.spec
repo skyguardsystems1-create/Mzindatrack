@@ -9,9 +9,8 @@ source.exclude_exts = spec,md,yml,yaml
 source.exclude_dirs = tests, bin, __pycache__, .git, .github, .buildozer
 version = 1.0.0
 
-# IMPORTANT: Do NOT pin python3 version - let it use the system version
-# The system python 3.14.2 will be used as hostpython3
-requirements = python3,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview
+# Pinned dependencies compatible with Python 3.11 for mobile builds
+requirements = python3,Cython==0.29.36,kivy==2.2.1,requests,plyer,pyjnius==1.5.1,kivy-garden.xwebview
 
 presplash.filename = assets/presplash.png
 icon.filename = assets/icon.png
