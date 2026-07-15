@@ -168,7 +168,6 @@ jobs:
 
     - name: Build APK
       id: build
-      continue-on-error: true
       timeout-minutes: 150
       run: |
         set -euo pipefail
@@ -180,8 +179,15 @@ jobs:
         # Verify buildozer is available before building
         which buildozer || { echo "❌ buildozer not found!"; exit 127; }
         
-        buildozer -v android debug 2>&1 | tee build.log
-        BUILD_EXIT=$?
+        # Run buildozer and capture output. If buildozer fails, display logs and exit with error
+        if buildozer -v android debug 2>&1 | tee build.log; then
+          BUILD_SUCCESS=true
+        else
+          BUILD_SUCCESS=false
+          echo ""
+          echo "❌ Buildozer failed. Last 200 lines of output:"
+          tail -n 200 build.log || true
+        fi
         
         BUILD_END=$(date +%s)
         BUILD_TIME=$((BUILD_END - BUILD_START))
@@ -192,7 +198,8 @@ jobs:
         echo "⏱️ Build completed in: ${BUILD_MINUTES}m ${BUILD_SECONDS}s"
         echo ""
         echo "🔍 Checking for APK..."
-        if ls bin/*.apk 2>/dev/null; then
+        
+        if [ "$BUILD_SUCCESS" = "true" ] && ls bin/*.apk 2>/dev/null; then
           echo "✅ APK build successful!"
           APK_SIZE=$(du -h bin/*.apk | awk '{print $1}' | tail -1)
           echo "📦 APK Size: $APK_SIZE"
@@ -204,12 +211,8 @@ jobs:
           echo "❌ No APK found in bin/"
           echo "apk_exists=false" >> $GITHUB_OUTPUT
           echo "build_time=${BUILD_MINUTES}m ${BUILD_SECONDS}s" >> $GITHUB_OUTPUT
-          echo ""
-          echo "📋 Last 100 lines of build log:"
-          tail -n 100 build.log || true
+          exit 1
         fi
-        
-        exit $BUILD_EXIT
 
     - name: Upload APK artifact
       if: steps.build.outputs.apk_exists == 'true'
