@@ -40,7 +40,7 @@ android.use_androidx = True
 android.gradle_dependencies = 'androidx.webkit:webkit:1.6.1'
 
 # Python-for-Android settings
-p4a.branch = master
+p4a.branch = develop
 p4a.bootstrap = sdl2
 
 # Additional android configuration
