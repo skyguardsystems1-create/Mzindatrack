@@ -131,11 +131,9 @@ jobs:
           sed -i 's/android.ndk = 23c/android.ndk = 28c/g' buildozer.spec || true
           sed -i 's/android.ndk = 25c/android.ndk = 28c/g' buildozer.spec || true
 
-          # Update p4a branch to release-2024.1.12 for Kivy 2.2.1 compatibility
-          sed -i 's/p4a.branch = develop/p4a.branch = release-2024.1.12/g' buildozer.spec || true
-          sed -i 's/p4a.branch = release-2023.6.0/p4a.branch = release-2024.1.12/g' buildozer.spec || true
-          sed -i 's/p4a.branch = release-2023.7.0/p4a.branch = release-2024.1.12/g' buildozer.spec || true
-          sed -i 's/p4a.branch = master/p4a.branch = release-2024.1.12/g' buildozer.spec || true
+          # FIX: Use develop branch instead of non-existent release-2024.1.12
+          sed -i 's/p4a.branch = master/p4a.branch = develop/g' buildozer.spec || true
+          sed -i 's/p4a.branch = release-[0-9.]*\([^a-zA-Z0-9]*\)$/p4a.branch = develop\1/g' buildozer.spec || true
 
           # FIX: Completely replace the requirements line
           # Remove any existing requirements line entirely
