@@ -29,7 +29,7 @@ jobs:
         path: |
           ~/.buildozer
           ~/.cache/pip
-        key: buildozer-${{ runner.os }}-py3.11-${{ hashFiles('buildozer.spec') }}-v2
+        key: buildozer-${{ runner.os }}-py3.11-${{ hashFiles('buildozer.spec') }}-v3
         restore-keys: |
           buildozer-${{ runner.os }}-v2-
 
@@ -77,7 +77,8 @@ jobs:
         pip install --upgrade pip setuptools wheel
         
         echo "🔨 Installing build tools with pinned versions..."
-        pip install "buildozer==1.5.0" "Cython==0.29.36" "python-for-android" "setuptools<75"
+        # Install p4a from develop branch and pin Cython to match runner
+        pip install "buildozer==1.5.0" "Cython==0.29.36" "setuptools<75" git+https://github.com/kivy/python-for-android@develop
         
         echo "✅ Build tools installed"
         echo "📍 Buildozer path:"
@@ -138,8 +139,8 @@ jobs:
           # FIX: Completely replace the requirements line
           # Remove any existing requirements line entirely
           sed -i '/^requirements/d' buildozer.spec || true
-          # Add the correct requirements at the beginning of the [app] section
-          sed -i '/^\[app\]/a requirements = python3,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview' buildozer.spec || true
+          # Add the correct requirements at the beginning of the [app] section (include Cython)
+          sed -i '/^\[app\]/a requirements = python3,Cython==0.29.36,kivy==2.2.1,requests,plyer,pyjnius,kivy-garden.xwebview' buildozer.spec || true
 
           # Fix android.arch to android.archs
           sed -i 's/android.arch =/android.archs =/g' buildozer.spec || true
