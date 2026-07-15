@@ -10,8 +10,8 @@ source.exclude_dirs = tests, bin, __pycache__, .git, .github, .buildozer
 version = 1.0.0
 
 # Updated dependencies for Python 3.14 compatibility
-# Cython 0.29.36 is incompatible with Python 3.14 - upgraded to 3.0.10
-requirements = python3,Cython==3.0.10,kivy==2.2.1,requests,plyer,pyjnius==0.4.4,kivy-garden.xwebview
+# Cython 3.0.11 includes Python 3.14 fixes for _PyLong_AsByteArray API
+requirements = python3,Cython==3.0.11,kivy==2.2.1,requests,plyer,pyjnius==0.4.4,kivy-garden.xwebview
 
 presplash.filename = assets/presplash.png
 icon.filename = assets/icon.png
