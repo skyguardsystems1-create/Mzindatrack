@@ -29,9 +29,9 @@ jobs:
         path: |
           ~/.buildozer
           ~/.cache/pip
-        key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+        key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}-v2
         restore-keys: |
-          buildozer-${{ runner.os }}-
+          buildozer-${{ runner.os }}-v2-
 
     - name: Measure disk space
       run: |
@@ -76,8 +76,8 @@ jobs:
         echo "🔨 Upgrading pip and setuptools..."
         pip install --upgrade pip setuptools wheel
         
-        echo "🔨 Installing buildozer, cython, and python-for-android..."
-        pip install buildozer cython python-for-android
+        echo "🔨 Installing build tools with pinned versions..."
+        pip install "buildozer>=1.5.0" "Cython==0.29.36" "python-for-android>=2024.1" "setuptools<75"
         
         echo "✅ Build tools installed"
         echo "📍 Buildozer path:"
@@ -85,6 +85,9 @@ jobs:
         
         echo "📍 Buildozer version:"
         buildozer --version
+        
+        echo "📍 Cython version:"
+        python -c "import Cython; print(Cython.__version__)"
 
     - name: List repository files (debug)
       run: |
@@ -128,10 +131,11 @@ jobs:
           sed -i 's/android.ndk = 23c/android.ndk = 28c/g' buildozer.spec || true
           sed -i 's/android.ndk = 25c/android.ndk = 28c/g' buildozer.spec || true
 
-          # Update p4a branch to master (latest stable)
-          sed -i 's/p4a.branch = develop/p4a.branch = master/g' buildozer.spec || true
-          sed -i 's/p4a.branch = release-2023.6.0/p4a.branch = master/g' buildozer.spec || true
-          sed -i 's/p4a.branch = release-2023.7.0/p4a.branch = master/g' buildozer.spec || true
+          # Update p4a branch to release-2024.1.12 for Kivy 2.2.1 compatibility
+          sed -i 's/p4a.branch = develop/p4a.branch = release-2024.1.12/g' buildozer.spec || true
+          sed -i 's/p4a.branch = release-2023.6.0/p4a.branch = release-2024.1.12/g' buildozer.spec || true
+          sed -i 's/p4a.branch = release-2023.7.0/p4a.branch = release-2024.1.12/g' buildozer.spec || true
+          sed -i 's/p4a.branch = master/p4a.branch = release-2024.1.12/g' buildozer.spec || true
 
           # FIX: Completely replace the requirements line
           # Remove any existing requirements line entirely
@@ -159,6 +163,9 @@ jobs:
           echo ""
           echo "📋 Full requirements line:"
           grep "^requirements" buildozer.spec || echo "ERROR: No requirements line found!"
+          echo ""
+          echo "📋 p4a.branch setting:"
+          grep "^p4a.branch" buildozer.spec || echo "No p4a.branch found"
           echo ""
           echo "📋 Gradle dependencies:"
           grep "^android.gradle_dependencies" buildozer.spec || echo "No gradle dependencies found"
